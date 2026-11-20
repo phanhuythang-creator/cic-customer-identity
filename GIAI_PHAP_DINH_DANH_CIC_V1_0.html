@@ -2996,7 +2996,29 @@ function fitImage(){const nw=img.naturalWidth||1,nh=img.naturalHeight||1;fit=Mat
 function openImage(el){previousFocus=document.activeElement;img.onload=fitImage;img.src=el.currentSrc||el.src;img.alt=el.alt||'Hình ảnh phóng to';const caption=el.closest('figure')?.querySelector('figcaption')?.textContent?.trim()||el.alt||'Hình ảnh trong tài liệu';document.getElementById('cic-viewer-title').textContent=caption;modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';document.getElementById('cic-viewer-close').focus();if(img.complete&&img.naturalWidth)fitImage()}
 function closeImage(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';img.removeAttribute('src');if(previousFocus?.focus)previousFocus.focus()}
 function changeZoom(mult){const next=Math.max(.05,Math.min(12,scale*mult));scale=next;apply()}
-document.querySelectorAll('#document img').forEach(el=>{el.title='Nhấp đúp để xem phóng to';el.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();openImage(el)});el.setAttribute('tabindex','0');el.setAttribute('role','button');el.setAttribute('aria-label',(el.alt||'Hình ảnh')+' — nhấn Enter để phóng to');el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();openImage(el)}})});
+// Event delegation: works even when search/filter/gallery recreates #document nodes.
+const imageContainer=document.getElementById('document');
+function prepareImages(){
+ imageContainer.querySelectorAll('img').forEach(el=>{
+   el.title='Nhấp một lần để phóng to hình ảnh';
+   el.style.cursor='zoom-in';
+   el.setAttribute('tabindex','0');
+   el.setAttribute('role','button');
+   el.setAttribute('aria-label',(el.alt||'Sơ đồ trong tài liệu')+' — nhấn Enter để phóng to');
+ });
+}
+prepareImages();
+const imageObserver=new MutationObserver(()=>prepareImages());
+imageObserver.observe(imageContainer,{childList:true,subtree:true});
+imageContainer.addEventListener('click',e=>{
+ const el=e.target.closest('img');
+ if(!el||!imageContainer.contains(el))return;
+ e.preventDefault();e.stopPropagation();openImage(el);
+});
+imageContainer.addEventListener('keydown',e=>{
+ const el=e.target.closest('img');
+ if(el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openImage(el)}
+});
 document.getElementById('cic-viewer-close').addEventListener('click',closeImage);
 document.getElementById('cic-viewer-plus').addEventListener('click',()=>changeZoom(1.25));
 document.getElementById('cic-viewer-minus').addEventListener('click',()=>changeZoom(1/1.25));
